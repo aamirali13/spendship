@@ -1,0 +1,219 @@
+/* ------------------------------------------------------------------ */
+/* Landing page — hero overrides                                       */
+/* ------------------------------------------------------------------ */
+
+:root {
+    --teal: #0ea5a0;
+    --teal-light: #e6f7f6;
+}
+
+/* Override the two-column hero to a centered single column */
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem 5rem;
+    max-width: 760px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Badge                                                               */
+/* ------------------------------------------------------------------ */
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--teal-light);
+    color: var(--teal);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    margin-bottom: 1.75rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.hero-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Headline                                                            */
+/* ------------------------------------------------------------------ */
+
+.hero-title {
+    font-size: clamp(2.6rem, 6vw, 4.2rem);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+}
+
+.hero-title-teal {
+    color: var(--teal);
+    font-style: normal;
+}
+
+/* ------------------------------------------------------------------ */
+/* Subtitle                                                            */
+/* ------------------------------------------------------------------ */
+
+.hero-subtitle {
+    font-size: 1rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 2rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* CTA buttons                                                         */
+/* ------------------------------------------------------------------ */
+
+.hero-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+/* Both buttons solid black on the hero */
+.hero-actions .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.7rem 1.6rem;
+    font-size: 0.95rem;
+    border-radius: var(--radius-sm);
+}
+
+.hero-actions .btn-primary:hover {
+    background: var(--teal);
+}
+
+/* ------------------------------------------------------------------ */
+/* App preview frame                                                   */
+/* ------------------------------------------------------------------ */
+
+.preview-frame {
+    width: 100%;
+    max-width: 620px;
+    background: #f5f4f0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem 1.75rem;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.07);
+    text-align: left;
+}
+
+/* Traffic lights */
+.preview-traffic {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+}
+
+.traffic-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+}
+
+.traffic-red    { background: #ff5f57; }
+.traffic-yellow { background: #febc2e; }
+.traffic-green  { background: #28c840; }
+
+/* Stat cards row */
+.preview-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.stat-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1rem;
+}
+
+.stat-label {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+.stat-value {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--ink);
+    margin-bottom: 0.2rem;
+}
+
+.stat-change {
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.stat-change.positive { color: #16a34a; }
+.stat-change.teal     { color: var(--teal); }
+
+.stat-sub {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+}
+
+/* Category bar chart */
+.preview-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.preview-bar-row {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.preview-cat {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+}
+
+.preview-bar-track {
+    height: 8px;
+    background: var(--border-soft);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.preview-bar {
+    height: 100%;
+    border-radius: 999px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 600px) {
+    .preview-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
