@@ -45,10 +45,13 @@ Flask app, server-rendered with Jinja2, no frontend framework or build tooling.
 | 8 | `/expenses/<int:id>/edit` | Update expense |
 | 9 | `/expenses/<int:id>/delete` | Remove expense |
 
-**Database layer (`database/db.py`):** Not implemented yet; the file only contains a comment describing it. It will use SQLite through the standard-library `sqlite3` module (no ORM), with the database file `expense_tracker.db` in the project root (gitignored). The module must expose:
-- `get_db()`: returns a connection with `row_factory` set and `PRAGMA foreign_keys = ON`
-- `init_db()`: creates tables with `CREATE TABLE IF NOT EXISTS`
-- `seed_db()`: inserts sample development data
+**Database layer (`database/db.py`):** SQLite through the standard-library `sqlite3` module (no ORM). The database file is `spendly.db` in the project root (gitignored). Its path is built from `db.py`'s own location, so the working directory doesn't matter. The module exposes:
+- `get_db()`: returns an open connection with `row_factory = sqlite3.Row` and `PRAGMA foreign_keys = ON`. The caller must close it.
+- `init_db()`: creates the `users` and `expenses` tables with `CREATE TABLE IF NOT EXISTS`
+- `seed_db()`: inserts a demo user (`demo@spendly.com` / `demo123`) and 8 expenses, but only when `users` is empty
+- `CATEGORIES`: the 7 allowed expense categories. `expenses.category` has a matching SQL `CHECK` constraint, so any change to the list must update both places.
+
+`app.py` calls `init_db()` and `seed_db()` at import time inside `app.app_context()`. Because `CREATE TABLE IF NOT EXISTS` never alters an existing table, schema changes require deleting `spendly.db` so it gets recreated. SQL must always use `?` placeholders, never string formatting.
 
 **Templates:** Every page extends `base.html`, which provides the navbar, footer, Google Fonts (DM Serif Display + DM Sans) and the single stylesheet/script includes. Override `{% block title %}` and `{% block content %}`, and optionally `{% block head %}` / `{% block scripts %}`. Page-specific JS goes inline in `{% block scripts %}` (see the demo-video modal in `landing.html`); `main.js` is an empty shared file.
 
