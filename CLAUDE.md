@@ -32,14 +32,13 @@ Flask app, server-rendered with Jinja2, no frontend framework or build tooling.
 
 **Request flow:** route in `app.py` → template in `templates/` → extends `base.html` → `static/css/style.css` + `static/js/main.js`.
 
-**Routes (`app.py`):** All routes live in a single module. `/register` accepts GET and POST: it validates the form, creates the user via `create_user()`, flashes a `"success"` message and redirects to `/login`; on failure it re-renders with `error=` plus the typed `name`/`email`. The other implemented pages (`/`, `/login`, `/terms`, `/privacy`) only render templates and accept only GET. The login form already `POST`s to `/login` and renders `{{ error }}`, so adding login means adding `methods=["GET", "POST"]` and passing `error=` back. `login.html` renders flashed messages by category (`success` → `.auth-success`, anything else → `.auth-error`). `app.secret_key` comes from the `SECRET_KEY` environment variable, with a dev-only fallback in `app.py`.
+**Routes (`app.py`):** All routes live in a single module. `/register` accepts GET and POST: it validates the form, creates the user via `create_user()`, flashes a `"success"` message and redirects to `/login`; on failure it re-renders with `error=` plus the typed `name`/`email`. `/login` accepts GET and POST: it normalises the email, checks the password with `check_password_hash`, then calls `session.clear()` and sets `session["user_id"]` and `session["user_name"]` before redirecting to `/profile`. On failure it re-renders with `error=` plus the typed `email`, and shows the same "Invalid email or password." message for an unknown email or a wrong password. Login has no password-length check, because the demo password is 7 characters. Signed-in users who visit `/login` or `/register` are redirected to `/profile`. `/logout` (GET) clears the session, flashes a `"success"` message and redirects to `/login`. `base.html` switches the navbar to the user's name plus "Sign out" when `session.user_id` is set. No route requires login yet. The other implemented pages (`/`, `/terms`, `/privacy`) only render templates and accept only GET. `login.html` renders flashed messages by category (`success` → `.auth-success`, anything else → `.auth-error`). `app.secret_key` comes from the `SECRET_KEY` environment variable, with a dev-only fallback in `app.py`.
 
 **Planned step progression** (placeholder routes return a "coming in Step N" string):
 
 | Step | Route | Purpose |
 |------|-------|---------|
 | 1 | — | Implement `database/db.py` |
-| 3 | `/logout` | Session teardown |
 | 4 | `/profile` | User profile page |
 | 7 | `/expenses/add` | Create expense |
 | 8 | `/expenses/<int:id>/edit` | Update expense |
