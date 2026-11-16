@@ -32,7 +32,7 @@ Flask app, server-rendered with Jinja2, no frontend framework or build tooling.
 
 **Request flow:** route in `app.py` → template in `templates/` → extends `base.html` → `static/css/style.css` + `static/js/main.js`.
 
-**Routes (`app.py`):** All routes live in a single module. Implemented pages (`/`, `/register`, `/login`, `/terms`, `/privacy`) only render templates. Every route currently accepts only GET. The login and register forms already `POST` to `/login` and `/register` and render an `{{ error }}` variable, so adding auth means adding `methods=["GET", "POST"]` and passing `error=` back to the template. No `app.secret_key` is set yet, and sessions need one.
+**Routes (`app.py`):** All routes live in a single module. `/register` accepts GET and POST: it validates the form, creates the user via `create_user()`, flashes a `"success"` message and redirects to `/login`; on failure it re-renders with `error=` plus the typed `name`/`email`. The other implemented pages (`/`, `/login`, `/terms`, `/privacy`) only render templates and accept only GET. The login form already `POST`s to `/login` and renders `{{ error }}`, so adding login means adding `methods=["GET", "POST"]` and passing `error=` back. `login.html` renders flashed messages by category (`success` → `.auth-success`, anything else → `.auth-error`). `app.secret_key` comes from the `SECRET_KEY` environment variable, with a dev-only fallback in `app.py`.
 
 **Planned step progression** (placeholder routes return a "coming in Step N" string):
 
@@ -49,6 +49,8 @@ Flask app, server-rendered with Jinja2, no frontend framework or build tooling.
 - `get_db()`: returns an open connection with `row_factory = sqlite3.Row` and `PRAGMA foreign_keys = ON`. The caller must close it.
 - `init_db()`: creates the `users` and `expenses` tables with `CREATE TABLE IF NOT EXISTS`
 - `seed_db()`: inserts a demo user (`demo@spendly.com` / `demo123`) and 8 expenses, but only when `users` is empty
+- `get_user_by_email(email)`: returns the user `Row` (including `password_hash`) or `None`. Pass an email already normalised with `.strip().lower()`
+- `create_user(name, email, password)`: hashes the password with werkzeug, inserts the user and returns its id. Raises `sqlite3.IntegrityError` on a duplicate email
 - `CATEGORIES`: the 7 allowed expense categories. `expenses.category` has a matching SQL `CHECK` constraint, so any change to the list must update both places.
 
 `app.py` calls `init_db()` and `seed_db()` at import time inside `app.app_context()`. Because `CREATE TABLE IF NOT EXISTS` never alters an existing table, schema changes require deleting `spendly.db` so it gets recreated. SQL must always use `?` placeholders, never string formatting.
