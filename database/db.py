@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 
 from werkzeug.security import generate_password_hash
 
@@ -35,16 +35,17 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 """
 
-# (day of current month, category, amount, description)
+# (days before today, category, amount, description). Relative dates keep every
+# seeded expense in the past, whatever day of the month the database is created.
 SEED_EXPENSES = [
-    (2, "Food", 450.00, "Groceries at local market"),
-    (4, "Transport", 120.00, "Auto rickshaw to office"),
-    (5, "Bills", 1850.00, "Electricity bill"),
-    (8, "Health", 600.00, "Pharmacy — vitamins"),
-    (12, "Entertainment", 499.00, "Movie tickets"),
-    (15, "Shopping", 2299.00, "Running shoes"),
-    (18, "Other", 300.00, "Birthday gift for a friend"),
-    (22, "Food", 780.50, "Dinner with family"),
+    (21, "Food", 450.00, "Groceries at local market"),
+    (19, "Transport", 120.00, "Auto rickshaw to office"),
+    (18, "Bills", 1850.00, "Electricity bill"),
+    (15, "Health", 600.00, "Pharmacy — vitamins"),
+    (11, "Entertainment", 499.00, "Movie tickets"),
+    (8, "Shopping", 2299.00, "Running shoes"),
+    (4, "Other", 300.00, "Birthday gift for a friend"),
+    (1, "Food", 780.50, "Dinner with family"),
 ]
 
 
@@ -63,6 +64,18 @@ def get_user_by_email(email):
         return conn.execute(
             "SELECT id, name, email, password_hash, created_at FROM users WHERE email = ?",
             (email,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_user_by_id(user_id):
+    """Return the user row (without password_hash) for an id, or None."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE id = ?",
+            (user_id,),
         ).fetchone()
     finally:
         conn.close()
@@ -111,8 +124,8 @@ def seed_db():
 
         today = date.today()
         rows = [
-            (user_id, amount, category, today.replace(day=day).isoformat(), description)
-            for day, category, amount, description in SEED_EXPENSES
+            (user_id, amount, category, (today - timedelta(days=days_ago)).isoformat(), description)
+            for days_ago, category, amount, description in SEED_EXPENSES
         ]
         conn.executemany(
             "INSERT INTO expenses (user_id, amount, category, date, description) "
@@ -122,3 +135,55 @@ def seed_db():
         conn.commit()
     finally:
         conn.close()
+
+
+# ---- Profile: transaction history ----
+def get_recent_expenses(user_id, limit=10):
+    """Return the user's most recent expenses, newest first."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, date, description, category, amount FROM expenses "
+            "WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+    finally:
+        conn.close()
+# ---- end Profile: transaction history ----
+
+
+# ---- Profile: summary stats ----
+def get_expense_summary(user_id):
+    """Return the user's total spend and expense count.
+
+    Returns {"total": 0.0, "count": 0} when the user has no expenses.
+    """
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count "
+            "FROM expenses WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        return {"total": float(row["total"]), "count": int(row["count"])}
+    finally:
+        conn.close()
+# ---- end Profile: summary stats ----
+
+
+# ---- Profile: category breakdown ----
+def get_category_totals(user_id):
+    """Return (category, total) rows for the user, highest total first.
+
+    Returns an empty list when the user has no expenses.
+    """
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT category, SUM(amount) AS total FROM expenses "
+            "WHERE user_id = ? GROUP BY category ORDER BY total DESC",
+            (user_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+# ---- end Profile: category breakdown ----

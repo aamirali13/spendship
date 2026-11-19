@@ -9,7 +9,7 @@
         <header class="profile-head">
             <div>
                 <h1 class="profile-title">Your profile</h1>
-                <p class="profile-subtitle">An overview of your account and spending this month.</p>
+                <p class="profile-subtitle">An overview of your account and spending.</p>
             </div>
             <a href="{{ url_for('add_expense') }}" class="btn-primary profile-add">
                 <i data-lucide="plus" aria-hidden="true"></i>
@@ -74,7 +74,7 @@
                             {% for tx in transactions %}
                             <tr>
                                 <td class="tx-date">{{ tx.date | pretty_date }}</td>
-                                <td>{{ tx.description }}</td>
+                                <td>{{ tx.description or "—" }}</td>
                                 <td><span class="cat-pill cat-{{ tx.category | lower }}">{{ tx.category }}</span></td>
                                 <td class="tx-amount">{{ tx.amount | inr }}</td>
                             </tr>
