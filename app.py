@@ -5,7 +5,16 @@ from datetime import datetime
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from database.db import create_user, get_user_by_email, init_db, seed_db
+from database.db import (
+    create_user,
+    get_category_totals,
+    get_expense_summary,
+    get_recent_expenses,
+    get_user_by_email,
+    get_user_by_id,
+    init_db,
+    seed_db,
+)
 
 app = Flask(__name__)
 
@@ -35,46 +44,41 @@ def format_pretty_date(value, fmt="%d %b %Y"):
 
 
 # ------------------------------------------------------------------ #
-# Sample data for the Step 4 profile design.                          #
-# A later step replaces this with the logged-in user's real rows.     #
+# Profile data loaders (each section feeds one part of /profile)      #
 # ------------------------------------------------------------------ #
 
-SAMPLE_PROFILE = {
-    "user": {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "member_since": "2026-11-01",
-    },
-    "transactions": [
-        {"date": "2026-11-22", "description": "Dinner with family", "category": "Food", "amount": 780.50},
-        {"date": "2026-11-18", "description": "Birthday gift for a friend", "category": "Other", "amount": 300.00},
-        {"date": "2026-11-15", "description": "Running shoes", "category": "Shopping", "amount": 2299.00},
-        {"date": "2026-11-12", "description": "Movie tickets", "category": "Entertainment", "amount": 499.00},
-        {"date": "2026-11-08", "description": "Pharmacy — vitamins", "category": "Health", "amount": 600.00},
-        {"date": "2026-11-05", "description": "Electricity bill", "category": "Bills", "amount": 1850.00},
-        {"date": "2026-11-04", "description": "Auto rickshaw to office", "category": "Transport", "amount": 120.00},
-        {"date": "2026-11-02", "description": "Groceries at local market", "category": "Food", "amount": 450.00},
-    ],
-}
+# ---- Profile: transaction history ----
+def _load_transactions(user_id):
+    """Return the user's recent expenses for the transaction history table."""
+    return get_recent_expenses(user_id)
+# ---- end Profile: transaction history ----
 
 
-def _summarise(transactions):
-    """Return (stats, categories) computed from a list of transaction dicts."""
-    total = sum(tx["amount"] for tx in transactions)
-    by_category = {}
-    for tx in transactions:
-        by_category[tx["category"]] = by_category.get(tx["category"], 0) + tx["amount"]
+# ---- Profile: summary stats ----
+def _load_stats(user_id):
+    """Return a fresh dict with the user's spend `total` and expense `count`."""
+    return get_expense_summary(user_id)
+# ---- end Profile: summary stats ----
 
-    categories = [
-        {"name": name, "amount": amount, "pct": round(amount / total * 100, 1) if total else 0}
-        for name, amount in sorted(by_category.items(), key=lambda item: item[1], reverse=True)
+
+# ---- Profile: category breakdown ----
+def _load_categories(user_id):
+    """Return the user's spending per category with its share of the total.
+
+    Each item is a dict with "name", "amount" and "pct" (percent, 1 decimal),
+    ordered from the highest total to the lowest.
+    """
+    rows = get_category_totals(user_id)
+    grand_total = sum(r["total"] for r in rows)
+    return [
+        {
+            "name": r["category"],
+            "amount": r["total"],
+            "pct": round(r["total"] / grand_total * 100, 1) if grand_total else 0,
+        }
+        for r in rows
     ]
-    stats = {
-        "total": total,
-        "count": len(transactions),
-        "top_category": categories[0]["name"] if categories else "—",
-    }
-    return stats, categories
+# ---- end Profile: category breakdown ----
 
 
 # ------------------------------------------------------------------ #
@@ -165,6 +169,34 @@ def logout():
     return redirect(url_for("login"))
 
 
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    user = get_user_by_id(user_id)
+    if user is None:
+        # The session points at a user that no longer exists (e.g. the DB was reset).
+        session.clear()
+        return redirect(url_for("login"))
+
+    transactions = _load_transactions(user_id)
+    categories = _load_categories(user_id)
+    stats = _load_stats(user_id)
+    stats["top_category"] = categories[0]["name"] if categories else "—"
+    initials = "".join(part[0] for part in user["name"].split()[:2]).upper()
+
+    return render_template(
+        "profile.html",
+        user={"name": user["name"], "email": user["email"], "member_since": user["created_at"]},
+        initials=initials,
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
+    )
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -178,26 +210,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    if not session.get("user_id"):
-        return redirect(url_for("login"))
-
-    user = dict(SAMPLE_PROFILE["user"], name=session.get("user_name") or SAMPLE_PROFILE["user"]["name"])
-    transactions = SAMPLE_PROFILE["transactions"]
-    stats, categories = _summarise(transactions)
-    initials = "".join(part[0] for part in user["name"].split()[:2]).upper()
-
-    return render_template(
-        "profile.html",
-        user=user,
-        initials=initials,
-        stats=stats,
-        transactions=transactions,
-        categories=categories,
-    )
-
 
 @app.route("/expenses/add")
 def add_expense():
